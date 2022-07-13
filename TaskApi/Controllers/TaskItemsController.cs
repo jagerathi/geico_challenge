@@ -12,11 +12,11 @@ namespace TaskApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class TaskController : ControllerBase
+    public class TaskItemsController : ControllerBase
     {
         private readonly TaskApiContext _context;
 
-        public TaskController(TaskApiContext context)
+        public TaskItemsController(TaskApiContext context)
         {
             _context = context;
         }
@@ -86,14 +86,10 @@ namespace TaskApi.Controllers
         [HttpPost]
         public async Task<ActionResult<TaskItem>> PostTaskItem(TaskItem taskItem)
         {
-          if (_context.TaskItems == null)
-          {
-              return Problem("Entity set 'TaskApiContext.TaskItems'  is null.");
-          }
             _context.TaskItems.Add(taskItem);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetTaskItem", new { id = taskItem.Id }, taskItem);
+            return CreatedAtAction(nameof(GetTaskItem), new { id = taskItem.Id }, taskItem);
         }
 
         // DELETE: api/TaskCreate/5
