@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TaskApi.Context;
 using TaskApi.Model;
@@ -21,25 +16,19 @@ namespace TaskApi.Controllers
             _context = context;
         }
 
-        // GET: api/TaskCreate
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TaskItem>>> GetTaskItems()
+        public async Task<ActionResult<IEnumerable<TaskItemModel>>> GetTaskItems()
         {
-          if (_context.TaskItems == null)
-          {
-              return NotFound();
-          }
             return await _context.TaskItems.ToListAsync();
         }
 
-        // GET: api/TaskCreate/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<TaskItem>> GetTaskItem(long id)
+        public async Task<ActionResult<TaskItemModel>> GetTaskItem(long id)
         {
-          if (_context.TaskItems == null)
-          {
-              return NotFound();
-          }
+            if (_context.TaskItems == null)
+            {
+                return NotFound();
+            }
             var taskItem = await _context.TaskItems.FindAsync(id);
 
             if (taskItem == null)
@@ -50,10 +39,8 @@ namespace TaskApi.Controllers
             return taskItem;
         }
 
-        // PUT: api/TaskCreate/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutTaskItem(long id, TaskItem taskItem)
+        public async Task<IActionResult> PutTaskItem(long id, TaskItemModel taskItem)
         {
             if (id != taskItem.Id)
             {
@@ -81,10 +68,8 @@ namespace TaskApi.Controllers
             return NoContent();
         }
 
-        // POST: api/TaskCreate
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<TaskItem>> PostTaskItem(TaskItem taskItem)
+        public async Task<ActionResult<TaskItemModel>> PostTaskItem(TaskItemModel taskItem)
         {
             _context.TaskItems.Add(taskItem);
             await _context.SaveChangesAsync();
@@ -92,7 +77,6 @@ namespace TaskApi.Controllers
             return CreatedAtAction(nameof(GetTaskItem), new { id = taskItem.Id }, taskItem);
         }
 
-        // DELETE: api/TaskCreate/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTaskItem(long id)
         {

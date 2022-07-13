@@ -12,6 +12,6 @@ namespace TaskApi.Context
 
         }
 
-        public DbSet<TaskItem> TaskItems { get;set; } = null!;
+        public DbSet<TaskItemModel> TaskItems { get;set; } = null!;
     }
 }
