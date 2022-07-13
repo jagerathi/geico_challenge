@@ -2,6 +2,7 @@
 using TaskApi.Context;
 using TaskApi.Controllers;
 using TaskApi.Enums;
+using TaskApi.Exceptions;
 using TaskApi.Model;
 
 namespace TaskApi.Tests
@@ -27,9 +28,9 @@ namespace TaskApi.Tests
         }
 
         [TestMethod]
-        public void Should_Return_Task_Item_With_Id()
+        public async Task Should_Return_Task_Item_With_Id()
         {
-            var task = new TaskItemModel
+            var task = new TaskItemDto
             {
                 Description = "Test Task",
                 DueDate = DateTime.Today,
@@ -42,11 +43,32 @@ namespace TaskApi.Tests
 
             var controller = SetupController();
 
-            var response = controller.PostTaskItem(task);
+            var response = await controller.PostTaskItem(task);
 
             Assert.IsNotNull(response);
-            Assert.IsNotNull(response.Result);
-            Assert.AreNotEqual(response.Result.Value?.Id, 0);
+            Assert.AreNotEqual(response.Value?.Id, 0);
+        }
+
+        [TestMethod]
+        public async Task Should_Throw_Exception_Of_Invalid_Due_Date_If_Due_Date_Prior_To_Today()
+        {
+            var task = new TaskItemDto
+            {
+                Description = "Test Task",
+                DueDate = DateTime.Today.AddDays(-1.0),
+                StartDate = DateTime.Today,
+                EndDate = DateTime.Today,
+                Name = "Test Task",
+                Priority = Priority.Low,
+                Status = Status.New
+            };
+
+            var controller = SetupController();
+
+            async Task act() => await controller.PostTaskItem(task);
+
+            await Assert.ThrowsExceptionAsync<InvalidDueDateException>(act);
+
         }
         
     }

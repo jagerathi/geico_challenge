@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using TaskApi.Domain;
 using TaskApi.Model;
 
 namespace TaskApi.Context
@@ -7,11 +8,8 @@ namespace TaskApi.Context
     {
         public TaskApiContext(DbContextOptions<TaskApiContext> options) : base(options)
         {
-
-
-
         }
 
-        public DbSet<TaskItemModel> TaskItems { get;set; } = null!;
+        public DbSet<TaskItem> TaskItems { get;set; } = null!;
     }
 }

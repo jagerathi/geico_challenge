@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TaskApi.Context;
+using TaskApi.Domain;
 using TaskApi.Model;
 
 namespace TaskApi.Controllers
@@ -17,13 +18,13 @@ namespace TaskApi.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TaskItemModel>>> GetTaskItems()
+        public async Task<ActionResult<IEnumerable<TaskItemDto>>> GetTaskItems()
         {
-            return await _context.TaskItems.ToListAsync();
+            return await _context.TaskItems.Select(x => Transformers.TransformTaskItemToTaskItemDto.Transform(x)).ToListAsync();
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<TaskItemModel>> GetTaskItem(long id)
+        public async Task<ActionResult<TaskItemDto>> GetTaskItem(long id)
         {
             if (_context.TaskItems == null)
             {
@@ -36,18 +37,31 @@ namespace TaskApi.Controllers
                 return NotFound();
             }
 
-            return taskItem;
+            return Transformers.TransformTaskItemToTaskItemDto.Transform(taskItem);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutTaskItem(long id, TaskItemModel taskItem)
+        public async Task<ActionResult<TaskItemDto>> PutTaskItem(long id, TaskItemDto taskItem)
         {
             if (id != taskItem.Id)
             {
                 return BadRequest();
             }
 
-            _context.Entry(taskItem).State = EntityState.Modified;
+            var task = await _context.TaskItems.FindAsync(id);
+
+            if (task == null) return NotFound();
+
+            task.Status = taskItem.Status;
+            task.EndDate = taskItem.EndDate;
+            task.Description = taskItem.Description;
+            task.DueDate = taskItem.DueDate;
+            task.Name = taskItem.Name;
+            task.Priority = taskItem.Priority;
+            task.StartDate = taskItem.StartDate;
+            task.Status = taskItem.Status;
+
+            _context.Entry(task).State = EntityState.Modified;
 
             try
             {
@@ -65,16 +79,18 @@ namespace TaskApi.Controllers
                 }
             }
 
-            return NoContent();
+            return Transformers.TransformTaskItemToTaskItemDto.Transform(task);
         }
 
         [HttpPost]
-        public async Task<ActionResult<TaskItemModel>> PostTaskItem(TaskItemModel taskItem)
+        public async Task<ActionResult<TaskItemDto>> PostTaskItem(TaskItemDto taskItem)
         {
-            _context.TaskItems.Add(taskItem);
+            var item = Transformers.TransformTaskItemDtoToTaskItem.Transform(taskItem);
+
+            _context.TaskItems.Add(item);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetTaskItem), new { id = taskItem.Id }, taskItem);
+            return CreatedAtAction(nameof(GetTaskItem), new { id = item.Id }, taskItem);
         }
 
         [HttpDelete("{id}")]

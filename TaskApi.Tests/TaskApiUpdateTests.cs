@@ -1,8 +1,8 @@
-﻿using System.Net.Mime;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using NuGet.ContentModel;
 using TaskApi.Context;
 using TaskApi.Controllers;
+using TaskApi.Domain;
 using TaskApi.Enums;
 using TaskApi.Model;
 
@@ -20,7 +20,7 @@ namespace TaskApi.Tests
             var context = new TaskApiContext(options);
             context.Database.EnsureCreated();
 
-            context.TaskItems.Add(new TaskItemModel
+            context.TaskItems.Add(new TaskItem
             {
                 Id = 1,
                 StartDate = DateTime.Today,
@@ -43,17 +43,23 @@ namespace TaskApi.Tests
 
 
         [TestMethod]
-        public void Should_Return_Same_Id()
+        public async Task Should_Return_Same_Id()
         {
             var controller = SetupController();
 
-            var task = controller.GetTaskItem(1);
+            var response = await controller.GetTaskItem(1);
 
-            Assert.IsNotNull(task);
+            Assert.IsNotNull(response.Value);
+
+            var task = response.Value;
 
             task.Status = Status.InProgress;
 
-            task = controller.
+            var response2 = await controller.PutTaskItem(task.Id, task);
+
+            Assert.IsNotNull(response2.Value);
+            Assert.AreEqual(response2.Value.Id, task.Id);
+
 
         }
         
