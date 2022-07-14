@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using TaskApi.Context;
 using TaskApi.Domain;
+using TaskApi.Exceptions;
 using TaskApi.Model;
 
 namespace TaskApi.Controllers
@@ -48,9 +49,14 @@ namespace TaskApi.Controllers
                 return BadRequest();
             }
 
+            ValidateExistingItem(taskItem);
+
             var task = await _context.TaskItems.FindAsync(id);
 
-            if (task == null) return NotFound();
+            if (task == null) throw new TaskItemNotFoundException();
+
+            if(taskItem.Priority == Enums.Priority.High && task.Priority != Enums.Priority.High)
+                CheckHighPriorityLimit(taskItem);
 
             task.Status = taskItem.Status;
             task.EndDate = taskItem.EndDate;
@@ -61,17 +67,15 @@ namespace TaskApi.Controllers
             task.StartDate = taskItem.StartDate;
             task.Status = taskItem.Status;
 
-            _context.Entry(task).State = EntityState.Modified;
-
             try
             {
                 await _context.SaveChangesAsync();
             }
-            catch (DbUpdateConcurrencyException)
+            catch (DbUpdateConcurrencyException ex)
             {
                 if (!TaskItemExists(id))
                 {
-                    return NotFound();
+                    throw new TaskItemNotFoundException();
                 }
                 else
                 {
@@ -85,9 +89,12 @@ namespace TaskApi.Controllers
         [HttpPost]
         public async Task<ActionResult<TaskItemDto>> PostTaskItem(TaskItemDto taskItem)
         {
+            ValidateNewItem(taskItem);
+
             var item = Transformers.TransformTaskItemDtoToTaskItem.Transform(taskItem);
 
-            _context.TaskItems.Add(item);
+            _context.Add(item);
+
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetTaskItem), new { id = item.Id }, taskItem);
@@ -106,7 +113,7 @@ namespace TaskApi.Controllers
                 return NotFound();
             }
 
-            _context.TaskItems.Remove(taskItem);
+            _context.Remove(taskItem);
             await _context.SaveChangesAsync();
 
             return NoContent();
@@ -115,6 +122,29 @@ namespace TaskApi.Controllers
         private bool TaskItemExists(long id)
         {
             return (_context.TaskItems?.Any(e => e.Id == id)).GetValueOrDefault();
+        }
+
+        private void ValidateNewItem(TaskItemDto item)
+        {
+            if(item.DueDate.ToUniversalTime().Date < DateTime.UtcNow.Date || item.DueDate.ToUniversalTime().Date < item.StartDate.ToUniversalTime().Date) throw new InvalidDueDateException();
+
+            if(item.EndDate.ToUniversalTime().Date < item.StartDate.ToUniversalTime().Date) throw new InvalidEndDateException();
+
+            if(item.Priority == Enums.Priority.High)
+                CheckHighPriorityLimit(item);
+        }
+
+        private void ValidateExistingItem(TaskItemDto item)
+        {
+            if (item.EndDate.ToUniversalTime().Date < item.StartDate.ToUniversalTime().Date) throw new InvalidEndDateException();
+
+        }
+
+        private void CheckHighPriorityLimit(TaskItemDto item)
+        {
+            var count = _context.TaskItems.Count(x => x.DueDate.Date == item.DueDate.ToUniversalTime().Date && x.Priority == Enums.Priority.High && x.Status != Enums.Status.Finished && x.Id != item.Id);
+            if(count >= 100)
+                throw new TooManyHighPriorityTasksForDueDateException();
         }
     }
 }
